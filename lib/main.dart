@@ -1,239 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'models/anime_model.dart';
-import 'screens/anime_details.dart';
-import 'services/anime_service.dart';
+import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 
+// The entry point of the Flutter application.
 void main() {
-  runApp(MyApp());
+  runApp(MyApp()); // Runs the MyApp widget.
 }
 
-class MyApp extends StatelessWidget {
+// MyApp is the main widget of the application.
+class MyApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Anime App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness: Brightness.light,
-        textTheme:
-            GoogleFonts.latoTextTheme(Theme.of(context).textTheme).copyWith(
-          titleLarge: GoogleFonts.poppins(
-            fontSize: MediaQuery.of(context).size.width > 600
-                ? MediaQuery.of(context).size.width * 0.02
-                : MediaQuery.of(context).size.width * 0.05,
-            fontWeight: FontWeight.bold,
-          ),
-          bodyMedium: GoogleFonts.lato(
-            fontSize: MediaQuery.of(context).size.width * 0.015,
-            color: Colors.black87,
-          ),
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 1,
-          iconTheme: IconThemeData(color: Colors.black),
-        ),
-        cardTheme: CardTheme(
-          color: Colors.white,
-          elevation: 4,
-          margin: EdgeInsets.all(8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          hintStyle: GoogleFonts.lato(
-            fontSize: MediaQuery.of(context).size.width > 600
-                ? MediaQuery.of(context).size.width * 0.015
-                : MediaQuery.of(context).size.width * 0.04,
-            color: Colors.black38,
-          ),
-          prefixIconColor: Colors.black54,
-        ),
-      ),
-      home: HomePage(),
-    );
-  }
+  _MyAppState createState() => _MyAppState();
 }
 
-class HomePage extends StatefulWidget {
-  @override
-  _HomePageState createState() => _HomePageState();
-}
+// _MyAppState manages the state of MyApp.
+class _MyAppState extends State<MyApp> {
+  bool _isLoggedIn = false; // Tracks whether the user is logged in or not.
+  String _username = ''; // Stores the username of the logged-in user.
 
-class _HomePageState extends State<HomePage> {
-  late Future<List<AnimeModel>> animeList;
-  late Future<List<AnimeModel>> searchResults;
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTopAnimes();
-  }
-
-  void _loadTopAnimes() {
-    animeList = AnimeService.fetchTopAnimes().then((data) {
-      List<AnimeModel> animeList = [];
-      for (var json in data) {
-        animeList.add(AnimeModel.fromJson(json as Map<String, dynamic>));
-      }
-      return animeList;
+  // Method to handle user login.
+  void _login(String username) {
+    setState(() {
+      _isLoggedIn = true; // Updates login status to true.
+      _username = username; // Stores the username.
     });
   }
 
-  void _searchAnime(String query) async {
-    try {
-      var results = await AnimeService.searchAnime(query);
-      List<AnimeModel> animeResults = [];
-      for (var json in results) {
-        animeResults.add(AnimeModel.fromJson(json as Map<String, dynamic>));
-      }
-      setState(() {
-        searchResults = Future.value(animeResults);
-        _isSearching = true;
-      });
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  void _handleSearch(String query) {
-    _searchAnime(query);
+  // Method to handle user logout.
+  void _logout() {
+    setState(() {
+      _isLoggedIn = false; // Updates login status to false.
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Anime App'),
-        centerTitle: true,
-        actions: [
-          _buildSearchField(),
-        ],
-        leading: Icon(Icons.movie),
-      ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildSearchField() {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.35,
-      margin: EdgeInsets.symmetric(horizontal: 16),
-      padding: EdgeInsets.all(5),
-      child: TextField(
-        controller: _searchController,
-        onSubmitted: _handleSearch,
-        decoration: InputDecoration(
-          hintText: 'Search',
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return FutureBuilder<List<AnimeModel>>(
-      future: _isSearching ? searchResults : animeList,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (snapshot.hasData) {
-          return _buildGridView(snapshot.data!);
-        } else {
-          return Center(child: Text('No Data Available'));
-        }
-      },
-    );
-  }
-
-  Widget _buildGridView(List<AnimeModel> animeModels) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.65,
-      ),
-      itemCount: animeModels.length,
-      itemBuilder: (context, index) {
-        return _buildAnimeCard(animeModels[index]);
-      },
-    );
-  }
-
-  Widget _buildAnimeCard(AnimeModel animeModel) {
-    final screenWidth = MediaQuery.of(context).size.width > 600
-        ? MediaQuery.of(context).size.width * 0.4
-        : MediaQuery.of(context).size.width * 0.8;
-    final titleFontSize = screenWidth * 0.04;
-    final synopsisFontSize = screenWidth * 0.03;
-
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AnimeDetails(
-              animeModel: animeModel,
-            ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false, // Hides the debug banner.
+      title: 'Anime App', // Title of the app.
+      theme: ThemeData(
+        primarySwatch: Colors.blue, // Primary color of the app.
+        brightness: Brightness.light, // Light theme.
+        textTheme:
+            GoogleFonts.latoTextTheme(Theme.of(context).textTheme).copyWith(
+          titleLarge: GoogleFonts.poppins(
+            // Title text styling.
+            fontSize: MediaQuery.of(context).size.width > 600
+                ? MediaQuery.of(context).size.width *
+                    0.02 // Size for larger screens.
+                : MediaQuery.of(context).size.width *
+                    0.05, // Size for smaller screens.
+            fontWeight: FontWeight.bold, // Bold text.
           ),
-        );
-      },
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: Image.network(
-                animeModel.imageUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      animeModel.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      animeModel.synopsis,
-                      maxLines: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: synopsisFontSize,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          bodyMedium: GoogleFonts.lato(
+            // Body text styling.
+            fontSize: MediaQuery.of(context).size.width *
+                0.015, // Font size for body text.
+            color: Colors.black87, // Text color.
+          ),
+        ),
+        appBarTheme: AppBarTheme(
+          // AppBar styling.
+          backgroundColor: Colors.white, // AppBar background color.
+          foregroundColor: Colors.black, // AppBar text and icon color.
+          elevation: 1, // Shadow below the AppBar.
+          iconTheme:
+              IconThemeData(color: Colors.black), // Icon color in AppBar.
+        ),
+        cardTheme: CardTheme(
+          // Card styling.
+          color: Colors.white, // Card background color.
+          elevation: 4, // Shadow below the Card.
+          margin: EdgeInsets.all(8), // Margin around the Card.
+          shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(12), // Rounded corners for the Card.
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          // Input field styling.
+          border: OutlineInputBorder(
+            borderRadius:
+                BorderRadius.circular(8), // Rounded corners for input fields.
+          ),
+          hintStyle: GoogleFonts.lato(
+            // Hint text styling.
+            fontSize: MediaQuery.of(context).size.width > 600
+                ? MediaQuery.of(context).size.width *
+                    0.015 // Size for larger screens.
+                : MediaQuery.of(context).size.width *
+                    0.04, // Size for smaller screens.
+            color: Colors.black38, // Hint text color.
+          ),
+          prefixIconColor:
+              Colors.black54, // Color for icons inside input fields.
         ),
       ),
+      home: _isLoggedIn
+          ? HomePage(
+              onLogout: _logout,
+              username: _username) // Shows HomePage if logged in.
+          : LoginPage(onLogin: _login), // Shows LoginPage if not logged in.
     );
   }
 }
