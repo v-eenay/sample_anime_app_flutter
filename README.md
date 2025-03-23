@@ -27,7 +27,7 @@ The Anime App showcases:
 ### Installation
 
 1. Clone the repository:
-   `git clone https://github.com/yourusername/flutter-anime-app.git
+   `git clone https://github.com/v-eenay/flutter-anime-app.git
 2. Navigate to the project directory:
    `cd flutter-anime-app`
 3. Install the dependencies:
